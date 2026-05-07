@@ -799,37 +799,44 @@ function changeTextLayerContent(textLayer, textContent, justificationMode, prese
 
   app.activeDocument.activeLayer = textLayer;
   var originalBounds = null;
-  var originalSizePt = getTextSizeInPoints(textLayer);
-  var originalFont = null;
-  if (preserveFont === true) {
-    originalFont = getTextLayerFont(textLayer);
-  }
+
   if (preserveX === true) {
     originalBounds = getLayerBoundsPx(textLayer);
   }
-  textContent = textContent.replace(/\n/g, " ");
-  textLayer.textItem.contents = textContent;
-  if (preserveFont === true && originalFont) {
-    try {
-      textLayer.textItem.font = originalFont;
-    } catch (e) {
-      // Ignore font restore failures and keep Photoshop's current font.
-    }
-  }
-  if (preserveSize !== false && !isNaN(originalSizePt)) {
-    setTextLayerSizePt(textLayer, originalSizePt);
-  }
+
+  textContent = String(textContent).replace(/\n/g, " ");
+  // Use executeAction so Photoshop only updates the text string and leaves
+  // all character-level formatting (font, size, color, etc.) untouched.
+  setTextContentPreservingFormat(textContent);
+
   if (justificationMode === "center") {
     textLayer.textItem.justification = Justification.CENTER;
   }
 
-  if (preserveX === true) {
+  if (preserveX === true && originalBounds) {
     var currentBounds = getLayerBoundsPx(textLayer);
     var deltaX = originalBounds.left - currentBounds.left;
     if (deltaX !== 0) {
       textLayer.translate(deltaX, 0);
     }
   }
+}
+
+function setTextContentPreservingFormat(textContent) {
+  var descriptor = new ActionDescriptor();
+  var reference = new ActionReference();
+  reference.putEnumerated(
+    charIDToTypeID("TxLr"),
+    charIDToTypeID("Ordn"),
+    charIDToTypeID("Trgt")
+  );
+  descriptor.putReference(charIDToTypeID("null"), reference);
+
+  var textDescriptor = new ActionDescriptor();
+  textDescriptor.putString(charIDToTypeID("Txt "), textContent);
+  descriptor.putObject(charIDToTypeID("T   "), charIDToTypeID("TxLr"), textDescriptor);
+
+  executeAction(charIDToTypeID("setd"), descriptor, DialogModes.NO);
 }
 
 function getTextLayerFont(textLayer) {
