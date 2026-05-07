@@ -782,6 +782,8 @@ function processName(sourceName, outputName, content, template) {
     }
   }
 
+  centerBaseLayersBetweenLines(doc, contentLayerMap);
+
   var outputFileName = buildOutputFileName(outputName);
   app.activeDocument.exportDocument(
     new File(outputFolder.fsName + "/" + outputFileName),
@@ -845,13 +847,8 @@ function changeBaseLayerContent(textLayer, textContent) {
   }
   app.activeDocument.activeLayer = textLayer;
 
-  var originalSizePt = getTextSizeInPoints(textLayer);
   textContent = String(textContent).replace(/\n/g, " ");
   setTextContentPreservingFormat(textContent);
-
-  if (!isNaN(originalSizePt) && originalSizePt > 0) {
-    setTextLayerSizePt(textLayer, originalSizePt);
-  }
 
   textLayer.textItem.justification = Justification.CENTER;
   setVerticalJustificationCenter();
@@ -1118,4 +1115,35 @@ function propertiesMatch(projectItem, userData) {
     }
   }
   return true;
+}
+
+function findLayerByName(doc, name) {
+  var results = findLayers(doc, true, { name: name });
+  return results.length > 0 ? results[0] : null;
+}
+
+// Căn giữa các layer số (1, 2, 3, ...) theo công thức:
+// x + width/2 = (x_left_line_1 + x_line_2) / 2
+function centerBaseLayersBetweenLines(doc, contentLayerMap) {
+  var leftLine1 = findLayerByName(doc, "left_line_1");
+  var line2 = findLayerByName(doc, "line_2");
+
+  if (!leftLine1 || !line2) {
+    return;
+  }
+
+  var midpoint = (getLayerBoundsPx(leftLine1).left + getLayerBoundsPx(line2).left) / 2;
+
+  for (var i = 1; i <= contentLayerMap.maxIndex; i++) {
+    var pair = contentLayerMap.pairs[i];
+    if (!pair || !pair.base) {
+      continue;
+    }
+    var bounds = getLayerBoundsPx(pair.base);
+    var currentCenter = bounds.left + bounds.width / 2;
+    var deltaX = midpoint - currentCenter;
+    if (deltaX !== 0) {
+      pair.base.translate(deltaX, 0);
+    }
+  }
 }
