@@ -782,6 +782,8 @@ function processName(sourceName, outputName, content, template) {
     }
   }
 
+  fitDetailLayersToLine1(doc, contentLayerMap);
+
   centerBaseLayersBetweenLines(doc, contentLayerMap);
 
   var outputFileName = buildOutputFileName(outputName);
@@ -1006,18 +1008,26 @@ function textLayerFitsBox(textLayer, targetWidth, targetHeight) {
 }
 
 function setTextLayerSizePt(textLayer, sizePt) {
+  var saved = app.preferences.typeUnits;
+  app.preferences.typeUnits = TypeUnits.POINTS;
   textLayer.textItem.size = new UnitValue(sizePt, "pt");
+  app.preferences.typeUnits = saved;
 }
 
 function getTextSizeInPoints(textLayer) {
-  var size = textLayer.textItem.size;
-  if (size && typeof size.as === "function") {
-    return size.as("pt");
-  }
-  if (size && typeof size.value !== "undefined") {
-    return size.value;
-  }
-  return Number(size);
+  var saved = app.preferences.typeUnits;
+  app.preferences.typeUnits = TypeUnits.POINTS;
+  var sizePt = NaN;
+  try {
+    var size = textLayer.textItem.size;
+    if (size && typeof size.value !== "undefined") {
+      sizePt = size.value;
+    } else {
+      sizePt = Number(size);
+    }
+  } catch (e) {}
+  app.preferences.typeUnits = saved;
+  return sizePt;
 }
 
 function getTextBoxSizePx(textLayer, fallbackBounds) {
@@ -1120,6 +1130,69 @@ function propertiesMatch(projectItem, userData) {
 function findLayerByName(doc, name) {
   var results = findLayers(doc, true, { name: name });
   return results.length > 0 ? results[0] : null;
+}
+
+// Đọc font size bằng cách ép typeUnits = POINTS trước khi đọc textItem.size,
+// tránh lệch đơn vị khi document không phải 72 DPI hoặc typeUnits đang là pixels.
+function getDetailFontSizePt(textLayer) {
+  app.activeDocument.activeLayer = textLayer;
+  return getTextSizeInPoints(textLayer);
+}
+
+// Giảm font size tất cả _detail layer (mỗi lần 5pt) cho đến khi
+// không có layer nào có right vượt quá right của layer line_1.
+function fitDetailLayersToLine1(doc, contentLayerMap) {
+  var line1 = findLayerByName(doc, "line_1");
+  if (!line1) {
+    alert("Không tìm thấy layer 'line_1' trong template. Bỏ qua điều chỉnh font _detail.");
+    return;
+  }
+
+  var line1Right = getLayerBoundsPx(line1).right;
+
+  var detailLayers = [];
+  var initialSizes = [];
+  for (var i = 1; i <= contentLayerMap.maxIndex; i++) {
+    var pair = contentLayerMap.pairs[i];
+    if (pair && pair.detail) {
+      detailLayers.push(pair.detail);
+      var sz = getDetailFontSizePt(pair.detail);
+      if (isNaN(sz)) {
+        sz = getTextSizeInPoints(pair.detail);
+      }
+      initialSizes.push(sz);
+    }
+  }
+
+  if (detailLayers.length === 0) {
+    return;
+  }
+
+  var maxIterations = 100;
+  for (var iter = 0; iter < maxIterations; iter++) {
+    var anyExceeds = false;
+    for (var j = 0; j < detailLayers.length; j++) {
+      if (getLayerBoundsPx(detailLayers[j]).right > line1Right) {
+        anyExceeds = true;
+        break;
+      }
+    }
+
+    if (!anyExceeds) {
+      break;
+    }
+
+    var reduction = (iter + 1) * 5;
+    for (var k = 0; k < detailLayers.length; k++) {
+      if (isNaN(initialSizes[k])) {
+        continue;
+      }
+      var newSize = initialSizes[k] - reduction;
+      if (newSize > 1) {
+        setTextLayerSizePt(detailLayers[k], newSize);
+      }
+    }
+  }
 }
 
 // Căn giữa các layer số (1, 2, 3, ...) theo công thức:

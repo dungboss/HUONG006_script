@@ -1,4 +1,12 @@
 output name,name,content
+M1,Adam,"A-Ambitioniert, D-Durchsetzungsstark, A-Analytisch, M-Motiviert"
+M2,Adrian,"A-Ambitioniert, D-Durchsetzungsstark, R-Resilient, I-Innovativ, A-Analytisch, N-Nervenstark"
+M3,Ahmad,"A-Ambitioniert, H-Hartnäckig, M-Motiviert, A-Analytisch, D-Durchsetzungsstark"
+M4,Ahmed,"A-Ambitioniert, H-Hartnäckig, M-Motiviert, E-Effizient, D-Durchsetzungsstark"
+M5,Ahmet,"A-Ambitioniert, H-Hartnäckig, M-Motiviert, E-Effizient, T-Taktisch"
+M6,Alain,"A-Ambitioniert, L-Logisch, A-Analytisch, I-Innovativ, N-Nervenstark"
+M7,Albert,"A-Ambitioniert, L-Logisch, B-Belastbar, E-Effizient, R-Resilient, T-Taktisch"
+M8,Alex,"A-Ambitioniert, L-Logisch, E-Effizient, X-X-traklasse"
 M9,Alexander,"A-Ambitioniert, L-Logisch, E-Effizient, X-X-traklasse, A-Analytisch, N-Nervenstark, D-Durchsetzungsstark, E-Ehrgeizig, R-Resilient"
 M10,Alexandre,"A-Ambitioniert, L-Logisch, E-Effizient, X-X-traklasse, A-Analytisch, N-Nervenstark, D-Durchsetzungsstark, R-Resilient, E-Ehrgeizig"
 M43,Danny,"D-Durchsetzungsstark, A-Ambitioniert, N-Nervenstark, N-Nüchtern, Y-Young-professional"
