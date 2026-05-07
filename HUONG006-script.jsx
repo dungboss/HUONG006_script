@@ -766,7 +766,7 @@ function processName(sourceName, outputName, content, template) {
   for (var j = 0; j < contentItems.length; j++) {
     var pairIndex = j + 1;
     var pair = contentLayerMap.pairs[pairIndex];
-    changeTextLayerContent(pair.base, contentItems[j].letter, "preserve", true);
+    changeBaseLayerContent(pair.base, contentItems[j].letter);
     changeTextLayerContent(pair.detail, contentItems[j].detail, "preserve", true, true, true);
   }
 
@@ -774,7 +774,7 @@ function processName(sourceName, outputName, content, template) {
     var extraPair = contentLayerMap.pairs[k];
     if (extraPair) {
       if (extraPair.base) {
-        changeTextLayerContent(extraPair.base, "", "preserve", true);
+        changeBaseLayerContent(extraPair.base, "");
       }
       if (extraPair.detail) {
         changeTextLayerContent(extraPair.detail, "", "preserve", true, true, true);
@@ -837,6 +837,37 @@ function setTextContentPreservingFormat(textContent) {
   descriptor.putObject(charIDToTypeID("T   "), charIDToTypeID("TxLr"), textDescriptor);
 
   executeAction(charIDToTypeID("setd"), descriptor, DialogModes.NO);
+}
+
+function changeBaseLayerContent(textLayer, textContent) {
+  if (!textLayer) {
+    return;
+  }
+  app.activeDocument.activeLayer = textLayer;
+
+  var originalSizePt = getTextSizeInPoints(textLayer);
+  textContent = String(textContent).replace(/\n/g, " ");
+  setTextContentPreservingFormat(textContent);
+
+  if (!isNaN(originalSizePt) && originalSizePt > 0) {
+    setTextLayerSizePt(textLayer, originalSizePt);
+  }
+
+  textLayer.textItem.justification = Justification.CENTER;
+  setVerticalJustificationCenter();
+}
+
+function setVerticalJustificationCenter() {
+  var desc = new ActionDescriptor();
+  var ref = new ActionReference();
+  ref.putEnumerated(charIDToTypeID("TxLr"), charIDToTypeID("Ordn"), charIDToTypeID("Trgt"));
+  desc.putReference(charIDToTypeID("null"), ref);
+
+  var textDesc = new ActionDescriptor();
+  textDesc.putEnumerated(charIDToTypeID("VrtJ"), charIDToTypeID("VrtJ"), charIDToTypeID("Cntr"));
+  desc.putObject(charIDToTypeID("T   "), charIDToTypeID("TxLr"), textDesc);
+
+  executeAction(charIDToTypeID("setd"), desc, DialogModes.NO);
 }
 
 function getTextLayerFont(textLayer) {
